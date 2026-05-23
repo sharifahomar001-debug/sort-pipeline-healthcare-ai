@@ -53,6 +53,14 @@ The temporal split (2020–2022 vs 2023–2025) is indicative rather than precis
 AIID date fields reflect report publication dates rather than incident occurrence 
 dates, and some incidents in the database date back to 1998.
 
+A stronger source for future runs would be the OECD AIM database (15,346 incidents), 
+which includes structured fields for harm type, affected stakeholders, and AI system autonomy 
+level that map more cleanly onto a properly structured SORT monitoring question. 
+
+Future work would also automate the full pipeline end-to-end, including live database ingestion, scheduled runs, 
+and alerting when new incidents match a monitoring question, 
+moving from a one-time classification exercise toward a continuous surveillance system."
+
 ## Requirements
 anthropic
 pandas

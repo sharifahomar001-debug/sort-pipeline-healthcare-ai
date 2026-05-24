@@ -10,7 +10,7 @@ print(f"Columns: {df.columns.tolist()}")
 # SORT Monitoring Question -- healthcare AI harm
 SORT = {
     "subject": "patients or clinicians in healthcare settings",
-    "opportunity": "when a clinician acts on or in response to an AI-generated recommendation",
+    "opportunity": "using clinical AI systems for diagnosis, decision support, or documentation",
     "risk_event": "harm caused by incorrect, biased, or overconfident AI output",
     "timeframe": "2020-2025"
 }
@@ -78,56 +78,27 @@ for idx, row in sample.iterrows():
     title = str(row.get("title", ""))
     description = str(row.get("description", ""))
     harmed = str(row.get("Alleged harmed or nearly harmed parties", ""))
-    print(f"Assessing incident {idx+1}: {title[:50]}...")
+    
+    print(f"Assessing incident {idx+1}/100: {title[:50]}...")
+    
     result = assess_incident(title, description, harmed, SORT)
     result["incident_id"] = row.get("incident_id", idx)
     result["title"] = title[:80]
     results.append(result)
 
-# Split by time period
-df_results = pd.DataFrame(results)
-df_results.to_csv("sort_results.csv", index=False)
-
-# Add dates from original dataframe
-full_matches_data = [r for r in results if r["subject_match"] == "true" and r["risk_event_match"] == "true"]
-
-# Get dates for full matches
-early_matches = []
-late_matches = []
-
-for match in full_matches_data:
-    incident_row = df[df["incident_id"] == match["incident_id"]]
-    if not incident_row.empty:
-        date_val = incident_row.iloc[0]["date"]
-        if pd.notna(date_val) and str(date_val)[:4].isdigit():
-            year = int(str(date_val)[:4])
-            if 2020 <= year <= 2022:
-                early_matches.append(match)
-            elif 2023 <= year <= 2025:
-                late_matches.append(match)
+# Classify matches
+full_matches = [r for r in results if r["subject_match"] == "true" and r["risk_event_match"] == "true"]
+partial_matches = [r for r in results if r not in full_matches and (r["subject_match"] == "indeterminate" or r["risk_event_match"] == "indeterminate")]
+no_matches = [r for r in results if r["subject_match"] == "false" and r["risk_event_match"] == "false"]
 
 print(f"\n--- SORT PIPELINE RESULTS ---")
 print(f"Monitoring Question: Among {SORT['subject']} {SORT['opportunity']}, how many experienced {SORT['risk_event']}?")
-print(f"Timeframe: 2020-2022 vs 2023-2025")
 print(f"\nTotal assessed: {len(results)}")
-print(f"Full matches: {len(full_matches_data)}")
-print(f"Partial matches: {len([r for r in results if r not in full_matches_data and (r['subject_match'] == 'indeterminate' or r['risk_event_match'] == 'indeterminate')])}")
-print(f"No matches: {len([r for r in results if r['subject_match'] == 'false' and r['risk_event_match'] == 'false'])}")
-print(f"\nPeriod 1 (2020-2022): {len(early_matches)} full matches")
-print(f"Period 2 (2023-2025): {len(late_matches)} full matches")
-
-if len(early_matches) >= 3 and len(late_matches) >= 3:
-    if len(late_matches) > len(early_matches):
-        print(f"\nHarm trend: INCREASING")
-    elif len(late_matches) < len(early_matches):
-        print(f"\nHarm trend: DECREASING")
-    else:
-        print(f"\nHarm trend: STABLE")
-else:
-    print(f"\nHarm trend: INSUFFICIENT DATA for reliable trend claim")
-
+print(f"Full matches: {len(full_matches)}")
+print(f"Partial matches: {len(partial_matches)}")
+print(f"No matches: {len(no_matches)}")
 print(f"\nFull match incidents:")
-for m in full_matches_data:
+for m in full_matches:
     print(f"  [{m['incident_id']}] {m['title']}")
     print(f"  Reason: {m['reasoning']}")
 
